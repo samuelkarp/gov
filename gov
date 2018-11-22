@@ -1,0 +1,77 @@
+#!/bin/bash
+# Copyright 2018 Samuel Karp
+# SPDX-License-Identifier: BSD-3-Clause
+
+installroot=$HOME/.go
+
+usage() {
+	echo "$0 VERSION"
+	echo "$0 use VERSION"
+	echo "$0 download VERSION"
+	echo
+	echo "Install and use specific go versions installed at ${installroot}"
+	echo
+	echo -n "Current "
+	go version
+	echo "Available versions:"
+	ls "${installroot}" | grep go | sed -e 's/go//' | sort -Vr
+}
+
+die() {
+	>&2 echo $@
+	>&2 usage
+	exit 1
+}
+
+use() {
+	version=$1
+	[[ ! -z "${version}" ]] || die "You must specify a version"
+	newpath=${installroot}/go${version}/go
+	[[ -d ${newpath} ]] || die "${newpath} does not exist"
+
+	rm $HOME/.go/active
+	ln -s $HOME/.go/go${version}/go $HOME/.go/active
+	echo "go ${version} is now active"
+}
+
+download() {
+	version=$1
+	[[ ! -z "${version}" ]] || die "You must specify a version"
+	newpath=${installroot}/go${version}
+	[[ -d ${newpath} ]] && die "${newpath} already exists.  Did you already install ${version}?"
+	destination=$(mktemp)
+	downloadlocation="https://storage.googleapis.com/golang/go${version}.linux-amd64.tar.gz"
+	curl -o "${destination}" "${downloadlocation}"
+	if [[ $? -ne 0 ]]; then
+		die "Failed to download ${version} from ${downloadlocation}"
+	fi
+	mkdir -p $newpath
+	tar xf "${destination}" -C "${newpath}"
+	tarexit=$?
+	rm "${destination}"
+	if [[ ${tarexit} -ne 0 ]]; then
+		die "Failed to extract ${version} to ${newpath}"
+	fi
+}
+
+if [[ -z "$1" ]]; then
+	usage
+	exit 0
+fi
+
+case $1 in
+	use)
+		shift
+		use "$@"
+		;;
+	download)
+		shift
+		download "$@"
+		;;
+	help)
+		usage
+		;;
+	*)
+		use "$@"
+esac
+
