@@ -8,6 +8,7 @@ usage() {
 	echo "$0 VERSION"
 	echo "$0 use VERSION"
 	echo "$0 download VERSION"
+	echo "$0 remove VERSION"
 	echo
 	echo "Install and use specific go versions installed at ${installroot}"
 	echo
@@ -54,6 +55,14 @@ download() {
 	fi
 }
 
+remove() {
+	version=$1
+	[[ ! -z "${version}" ]] || die "You must specify a version"
+	delpath=${installroot}/go${version}
+	[[ -d ${delpath} ]] || die "${delpath} does not exist."
+	rm -rf ${delpath}
+}
+
 if [[ -z "$1" ]]; then
 	usage
 	exit 0
@@ -67,6 +76,10 @@ case $1 in
 	download)
 		shift
 		download "$@"
+		;;
+	remove)
+		shift
+		remove "$@"
 		;;
 	help)
 		usage
